@@ -5,7 +5,8 @@
                                       start each stdio server and scan its tools
   lemonink stdio  -- CMD ARGS...     start one stdio server and scan it
 
-Exit code: 0 if nothing at or above --fail-on, 1 otherwise, 2 on usage errors.
+Exit code: 0 if nothing at or above --fail-on, 1 otherwise, 2 on errors
+(including any server that could not be started or listed).
 """
 
 from __future__ import annotations
@@ -73,6 +74,7 @@ def main(argv: list[str] | None = None) -> int:
     findings: list[Finding] = []
     scanned = 0
     snaps: dict[str, dict] = {}
+    errors: list[dict] = []  # servers that could not be scanned
     source = getattr(a, "file", "stdio")
 
     try:
@@ -90,7 +92,8 @@ def main(argv: list[str] | None = None) -> int:
                         snaps[name] = live.snapshot(srv["command"], [str(x) for x in srv.get("args") or []],
                                                     srv.get("env"), a.timeout)
                     except Exception as e:  # keep going with the other servers
-                        print(f"[warn] {name}: {e}", file=sys.stderr)
+                        errors.append({"server": name, "error": str(e) or type(e).__name__})
+                        print(f"[error] {name}: not scanned: {e}", file=sys.stderr)
         elif a.cmd == "stdio":
             cmd = [c for c in a.command if c != "--"] if a.command[:1] == ["--"] else a.command
             if not cmd:
@@ -115,12 +118,14 @@ def main(argv: list[str] | None = None) -> int:
 
     shown = [f for f in findings if SEVERITY_ORDER[f.severity] >= SEVERITY_ORDER[a.min_severity]]
     if a.format == "json":
-        print(report.as_json(shown, scanned))
+        print(report.as_json(shown, scanned, errors))
     elif a.format == "sarif":
-        print(report.sarif(shown, source))
+        print(report.sarif(shown, source, errors))
     else:
-        print(report.text(shown, scanned, color=not a.no_color and sys.stdout.isatty()))
+        print(report.text(shown, scanned, color=not a.no_color and sys.stdout.isatty(), errors=errors))
 
+    if errors:
+        return 2  # some servers were not scanned; never report that as a pass
     if a.fail_on == "never":
         return 0
     return 1 if any(SEVERITY_ORDER[f.severity] >= SEVERITY_ORDER[a.fail_on] for f in findings) else 0

@@ -12,6 +12,7 @@ import os
 import queue
 import subprocess
 import threading
+import time
 
 PROTOCOL_VERSION = "2025-06-18"
 
@@ -48,11 +49,17 @@ class StdioSession:
         self._id += 1
         rid = self._id
         self._send({"jsonrpc": "2.0", "id": rid, "method": method, "params": params or {}})
+        # The deadline counts from when the request was sent, so notifications
+        # or unrelated messages from the server cannot extend the wait.
+        deadline = time.monotonic() + self.timeout
         while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError(f"no reply to {method} within {self.timeout:g}s")
             try:
-                msg = self._q.get(timeout=self.timeout)
+                msg = self._q.get(timeout=remaining)
             except queue.Empty as e:
-                raise TimeoutError(f"no reply to {method}") from e
+                raise TimeoutError(f"no reply to {method} within {self.timeout:g}s") from e
             if msg.get("id") == rid:
                 if "error" in msg:
                     raise RuntimeError(f"{method}: {msg['error']}")

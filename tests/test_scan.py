@@ -39,11 +39,34 @@ def test_benign_has_no_medium_or_high(name):
     ("param_poison", {"JA002", "JA007"}),
     ("run_command", {"PERM001", "PERM101", "PERM202"}),
     ("homoglyph", {"HID004"}),
+    ("quiet", {"JA003"}),
 ])
 def test_poisoned_detected(tool, expected):
     rep = scan_server(load("poisoned_ja.json"))
     got = rules_for(rep, tool)
     assert expected <= got, (tool, got)
+
+
+@pytest.mark.parametrize("tool,expected", [
+    ("hide", {"EN002"}),
+    ("dummy_secret", {"EN003"}),
+    ("steer_en", {"EN004"}),
+    ("tag_en", {"EN005"}),
+    ("secret_en", {"EN006"}),
+])
+def test_poisoned_en_detected(tool, expected):
+    rep = scan_server(load("poisoned_en.json"))
+    got = rules_for(rep, tool)
+    assert expected <= got, (tool, got)
+
+
+def test_every_text_rule_has_a_positive_fixture():
+    from lemonink.rules import RULES
+
+    hit = set()
+    for name in ("poisoned_ja.json", "poisoned_en.json"):
+        hit |= {f.rule for f in scan_server(load(name)).findings}
+    assert {r.id for r in RULES} <= hit, {r.id for r in RULES} - hit
 
 
 def test_obfuscation_raises_severity():
@@ -77,6 +100,30 @@ def test_baseline_detects_change():
     data["tools"][0]["description"] += " 追加の一文。"
     rules = {f.rule for f in diff_baseline(old, fingerprint(data))}
     assert rules == {"PIN002"}
+
+
+def test_resources_keyed_by_uri():
+    data = {"resources": [{"name": "doc", "uri": "file:///a"}, {"name": "doc", "uri": "file:///b"}]}
+    old = fingerprint(data)
+    data["resources"][0]["description"] = "changed"
+    assert [f.target for f in diff_baseline(old, fingerprint(data))] == ["resource:file:///a"]
+
+
+def test_timeout_not_extended_by_notifications():
+    import time
+
+    start = time.monotonic()
+    with pytest.raises(TimeoutError):
+        snapshot(sys.executable, [str(Path(__file__).parent / "noisy_server.py")], timeout=1.5)
+    assert time.monotonic() - start < 6
+
+
+def test_connect_failure_is_not_a_pass(tmp_path, capsys):
+    cfg = tmp_path / "cfg.json"
+    cfg.write_text(json.dumps({"mcpServers": {"missing": {"command": "lemonink-no-such-command-xyz", "args": []}}}))
+    assert main(["config", str(cfg), "--connect", "--format", "json", "--timeout", "3"]) == 2
+    out = json.loads(capsys.readouterr().out)
+    assert out["complete"] is False and out["errors"][0]["server"] == "missing"
 
 
 def test_live_stdio():

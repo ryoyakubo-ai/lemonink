@@ -159,9 +159,17 @@ def fingerprint(data: dict) -> dict[str, str]:
     out = {}
     for key in ("tools", "prompts", "resources"):
         for item in data.get(key) or []:
-            if isinstance(item, dict):
-                blob = json.dumps(item, sort_keys=True, ensure_ascii=False).encode()
-                out[f"{key[:-1]}:{item.get('name', '?')}"] = hashlib.sha256(blob).hexdigest()
+            if not isinstance(item, dict):
+                continue
+            blob = json.dumps(item, sort_keys=True, ensure_ascii=False).encode()
+            # Resources are identified by URI (names need not be unique); tools and prompts by name.
+            ident = item.get("uri") if key == "resources" and item.get("uri") else item.get("name", "?")
+            k = f"{key[:-1]}:{ident}"
+            n = 2
+            while k in out:  # keep duplicates apart instead of overwriting
+                k = f"{key[:-1]}:{ident}#{n}"
+                n += 1
+            out[k] = hashlib.sha256(blob).hexdigest()
     return out
 
 
