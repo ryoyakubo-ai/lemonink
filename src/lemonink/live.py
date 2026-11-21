@@ -14,6 +14,8 @@ import subprocess
 import threading
 import time
 
+from . import __version__
+
 PROTOCOL_VERSION = "2025-06-18"
 
 
@@ -83,7 +85,7 @@ def snapshot(command: str, args: list[str], env: dict | None = None, timeout: fl
         init = s.request("initialize", {
             "protocolVersion": PROTOCOL_VERSION,
             "capabilities": {},
-            "clientInfo": {"name": "lemonink", "version": "0.0.1"},
+            "clientInfo": {"name": "lemonink", "version": __version__},
         })
         s.notify("notifications/initialized")
         caps = init.get("capabilities") or {}

@@ -25,3 +25,35 @@ jobs:
       - run: python -m pip install -e .
       - run: python -m pytest -q
       - run: lemonink tools tests/fixtures/benign_ja.json
+
+  package:
+    # Build the sdist and wheel, check their metadata, and install the wheel
+    # into a clean environment, so a release cannot ship a broken package.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install build twine
+      - run: python -m build
+      - run: python -m twine check --strict dist/*
+      - name: Install the wheel and run it
+        shell: bash
+        run: |
+          python -m venv /tmp/wheel-env
+          if [ -x /tmp/wheel-env/Scripts/python.exe ]; then PY=/tmp/wheel-env/Scripts/python.exe; else PY=/tmp/wheel-env/bin/python; fi
+          "$PY" -m pip install dist/*.whl pytest
+          "$PY" -m lemonink --version
+          "$PY" -m lemonink tools tests/fixtures/benign_ja.json
+      - name: Run the tests from the sdist
+        shell: bash
+        run: |
+          mkdir /tmp/sdist && tar -xzf dist/*.tar.gz -C /tmp/sdist
+          cd /tmp/sdist/lemonink-*
+          python -m pip install . pytest
+          python -m pytest -q
