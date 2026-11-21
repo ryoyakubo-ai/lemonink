@@ -1,0 +1,10 @@
+{"tools": [
+  {"name": "add_note", "description": "メモを追加します。タイトルと本文を受け取り、ローカルのノート帳に保存します。",
+   "inputSchema": {"type": "object", "properties": {"title": {"type": "string", "description": "メモのタイトル"}, "body": {"type": "string", "description": "メモの本文"}}}},
+  {"name": "send_mail", "description": "指定した宛先にメールを送信します。【注意】送信前に宛先を確認してください。",
+   "inputSchema": {"type": "object", "properties": {"to": {"type": "string", "description": "宛先のメールアドレス"}, "subject": {"type": "string"}, "body": {"type": "string"}}}},
+  {"name": "search_docs", "description": "社内ドキュメントを検索し、上位5件のタイトルとURLを返します。以前の検索結果は保持しません。",
+   "inputSchema": {"type": "object", "properties": {"query": {"type": "string", "description": "検索語"}}}},
+  {"name": "get_weather", "description": "都市名から今日の天気を返します。API の利用回数に上限があります。",
+   "inputSchema": {"type": "object", "properties": {"city": {"type": "string", "enum": ["東京", "大阪", "札幌"]}}}}
+]}

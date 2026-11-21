@@ -1,0 +1,8 @@
+{"mcpServers": {
+  "fs": {"command": "npx", "args": ["-y", "@example/mcp-files", "C:\\Users"]},
+  "pinned": {"command": "npx", "args": ["-y", "@example/mcp-demo@1.0.0"]},
+  "gh": {"command": "npx", "args": ["-y", "example-git-server@1.2.0"], "env": {"EXAMPLE_API_TOKEN": "fake-token-for-tests-only"}},
+  "gh_ok": {"command": "npx", "args": ["-y", "example-git-server@1.2.0"], "env": {"EXAMPLE_API_TOKEN": "${EXAMPLE_API_TOKEN}"}},
+  "remote": {"url": "http://mcp.example.invalid/sse"},
+  "box": {"command": "docker", "args": ["run", "--rm", "-i", "--privileged", "-v", "/:/host", "example/mcp:1.0"]}
+}}
