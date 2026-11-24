@@ -1,5 +1,15 @@
 # Contributing
 
+Set up a development copy:
+
+```bash
+git clone https://github.com/ryoyakubo-ai/lemonink
+cd lemonink
+pip install -e . pytest
+python -m pytest
+```
+
+
 - Open an issue first for new rules or behavior changes.
 - Every new rule needs at least one positive fixture and must not fire (at medium or above) on
   `tests/fixtures/benign_*.json`.

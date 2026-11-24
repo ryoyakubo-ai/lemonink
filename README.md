@@ -1,8 +1,8 @@
 # lemonink
 
-[日本語](README.ja.md)
+[日本語](https://github.com/ryoyakubo-ai/lemonink/blob/main/README.ja.md)
 
-> Prototype (v0.0.1). Rules and output format will change.
+> Early release (v0.1.0). Rules and output format may still change.
 
 Offline safety checks for [Model Context Protocol](https://modelcontextprotocol.io) servers, with first-class
 support for **Japanese**. The name comes from lemon-juice invisible ink: writing that stays hidden until you heat the paper. lemonink brings hidden instructions to the surface.
@@ -33,18 +33,27 @@ lemonink is different in two ways:
 2. **Fully local.** No network calls, no LLM, no dependencies beyond the Python standard library.
    Nothing about your servers leaves your machine.
 
-## Install and run
+## Install
 
 ```bash
-pip install -e .            # Python 3.10+
+pip install lemonink        # Python 3.10+, no dependencies
+pipx install lemonink       # or keep it in its own environment
+```
+
+## Run
+
+```bash
 lemonink tools tools_list.json                  # a saved tools/list result
 lemonink config ~/.cursor/mcp.json              # check a client config (reads only)
 lemonink config claude_desktop_config.json --connect   # also start each stdio server and list its tools
 lemonink stdio -- npx -y some-server@1.2.3      # start one stdio server and scan it
 ```
 
-Options: `--format text|json|sarif`, `--fail-on high|medium|low|never` (exit code 1 when a finding is at
-or above this level), `--min-severity`, `--save-baseline FILE`, `--baseline FILE`.
+Options: `--format text|json|sarif`, `--fail-on high|medium|low|never`, `--min-severity`,
+`--save-baseline FILE`, `--baseline FILE`.
+
+Exit codes: `0` no finding at or above `--fail-on` (default `high`); `1` at least one such finding;
+`2` an error, including any server that could not be started or listed (it is reported as not scanned).
 
 `--connect` and `stdio` **run the server's code** on your machine, exactly like your MCP client would.
 lemonink only calls `initialize` and the `*/list` methods; it never calls a tool. Scan untrusted servers
